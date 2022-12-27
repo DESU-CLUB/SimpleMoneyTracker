@@ -39,9 +39,12 @@ class FinanceTable():
 
 def is_valid_date(date):
     try:
-        datetime.datetime.strptime(date,'%Y-%m-%d')
+        datetime.datetime.strptime(date,'%m-%d')
     except ValueError:
-        return False
+        return  False
+    return True
+    
+
 
 if __name__ == '__main__':
 
@@ -52,7 +55,7 @@ if __name__ == '__main__':
 
         #Simple check for valid cost
         costcheck = [str(i) for i in range(9)]+['.']
-        while filter(lambda x: x in costcheck,list(cost)):
+        while list(filter(lambda x: x not in costcheck,list(cost))):
             cost = input('Please enter cost again: ')
         
 

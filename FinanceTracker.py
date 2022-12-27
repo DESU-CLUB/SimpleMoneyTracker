@@ -14,25 +14,22 @@ class FinanceTable():
     '''
     def __init__(self,path = None): #this code will be generalised for each month first
         if path == None:
-            self.table = self.generateTable()
-            self.month = datetime.date.today().month
+            pass
         else:
             self.table = self.loadTable(path)
-            #Code to find earliest date in table 
         self.readPath = path
-
-        
-    def generateTable(self): #Good practice to make list, then grow data in list before making Dataframe
-        return []
-
 
     def loadTable(self,path):
         return pd.read_csv(path)
 
-    def writeTable(self,writePath):
+    def writeTable(self,writePath,changes):
         if self.readPath == None:
-            df = pd.DataFrame(self.table,columns = ['item','cost','date','remarks'])
-            df.to_csv()
+            df = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
+            df.to_csv(writePath)
+        else:
+            df.concat(pd.DataFrame(changes),0)
+            df.to_csv(writePath)
+            
         
         
 
@@ -43,18 +40,36 @@ def is_valid_date(date):
     except ValueError:
         return  False
     return True
+
+def save(table,changes):
+    save = input('Would you like to save changes[Y/N]: ')
+    while save not in ['Y','N','y','n']:
+        print('Valid answer required')
+        save = input('Would you like to save changes[Y/N]: ')
+    if save in ['y','Y']:
+        if table.readPath != None:
+            ow = input('Would you like to save changes into same file[Y/N]: ')
+            while ow not in ['Y','N','y','n']:
+                print('Valid answer required')
+                ow = input('Would you like to save changes into same file[Y/N]: ')
+            if ow in ['y','Y']:
+                table.writeTable(path,changes)
+            
+        if table.readPath == None or ow in ['n','N']:
+            path = input('Input path to write to: ')
+            table.writeTable(path,changes)
+
+            
     
-
-
-if __name__ == '__main__':
-
-
+    
+def askhelper():
+    changes = []
     while True:
         item = input('What was the item you bought: ')
         cost = input('How much did it cost: ')
 
         #Simple check for valid cost
-        costcheck = [str(i) for i in range(9)]+['.']
+        costcheck = [str(i) for i in range(10)]+['.']
         while list(filter(lambda x: x not in costcheck,list(cost))):
             cost = input('Please enter cost again: ')
         
@@ -65,6 +80,34 @@ if __name__ == '__main__':
 
 
         remarks = input('Any other remarks: ')
+            
+        quote = [item,cost,date,remarks]
+        changes.append(quote)
+            
+        cont = input('Any more things to add?[Y/N]: ')
+        while cont not in ['Y','N','y','n']:
+            print('Valid answer required')
+            cont = input('Any more things to add?[Y/N]: ')
+        if cont in ['n','N']:
+            break
+    return changes
+            
+            
+        
+
+    
+            
+            
+    
 
 
-
+if __name__ == '__main__':
+    path = input("Input Path for table (.csv): ")
+    if path == '':
+        table = FinanceTable()
+    else:
+        table = FinanceTable(path)
+    changes = askhelper()
+    save(table,changes)
+        
+    

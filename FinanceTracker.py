@@ -30,17 +30,26 @@ class FinanceTable():
             self.table.concat(pd.DataFrame(changes),0)
             self.table.to_csv(writePath)
             
-    def findmaxCost(self):
+    def findmaxCost(self,date):
         '''
         Finds maximum cost in table, and which YY-MM-DD it was
+        Date can be set to find max cost on date
 
-        Returns
+        Returns None
         -------
         max cost
 
         '''
         if type(self.table) == pd.DataFrame:
-            maxCostRow = self.table.loc['cost' == self.table.max(0)['cost']]
+            if date != 'None':
+                nWords = len(date)
+                itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
+            else:
+                itemsOnDate = self.table
+                
+            maxCostRow = itemsOnDate.loc['cost' == itemsOnDate.max(0)['cost']]
+                
+                
             cost = maxCostRow['cost']
             date = maxCostRow['date']
             item = maxCostRow['item']
@@ -48,6 +57,24 @@ class FinanceTable():
             print(f'{item} bought on {date} had max cost of {cost}')
         else:
             print('Invalid DataType, Generate table first!')
+            
+    def findDateCost(self,date,verbose = 0):#Takes specific day of month and year as input, finds cost in day
+        if type(self.table) == pd.DataFrame:
+            nWords = len(date)
+            itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
+            if verbose:
+                print(itemsOnDate.loc[:,itemsOnDate.columns != 'date'])
+            return itemsOnDate['cost'].sum()
+        
+    def avgCost(self,date):
+        if type(self.table) == pd.DataFrame:
+            nWords = len(date)
+            itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
+            return itemsOnDate['cost'].mean()
+        
+    def analyzeCost(): #Prints a line graph, with date as X and spendings as Y, draws average cost line
+        
+            
         
         
 
@@ -71,7 +98,7 @@ def save(table,changes):
                 print('Valid answer required')
                 ow = input('Would you like to save changes into same file[Y/N]: ')
             if ow in ['y','Y']:
-                table.writeTable(path,changes)
+                table.writeTable(table.readPath,changes)
             
         if table.readPath == None or ow in ['n','N']:
             path = input('Input path to write to: ')

@@ -24,12 +24,30 @@ class FinanceTable():
 
     def writeTable(self,writePath,changes):
         if self.readPath == None:
-            df = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
-            df.to_csv(writePath)
+            self.table = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
+            self.table.to_csv(writePath)
         else:
-            df.concat(pd.DataFrame(changes),0)
-            df.to_csv(writePath)
+            self.table.concat(pd.DataFrame(changes),0)
+            self.table.to_csv(writePath)
             
+    def findmaxCost(self):
+        '''
+        Finds maximum cost in table, and which YY-MM-DD it was
+
+        Returns
+        -------
+        max cost
+
+        '''
+        if type(self.table) == pd.DataFrame:
+            maxCostRow = self.table.loc['cost' == self.table.max(0)['cost']]
+            cost = maxCostRow['cost']
+            date = maxCostRow['date']
+            item = maxCostRow['item']
+            print('---------Returning item with max cost-------------')
+            print(f'{item} bought on {date} had max cost of {cost}')
+        else:
+            print('Invalid DataType, Generate table first!')
         
         
 
@@ -74,7 +92,7 @@ def askhelper():
             cost = input('Please enter cost again: ')
         
 
-        date = input('When did you buy it (MM-DD): ')
+        date = input('When did you buy it (YY-MM-DD): ')
         while not is_valid_date(date):
             date = input('Please enter date again: ')
 
@@ -94,11 +112,8 @@ def askhelper():
             
             
         
-
     
             
-            
-    
 
 
 if __name__ == '__main__':

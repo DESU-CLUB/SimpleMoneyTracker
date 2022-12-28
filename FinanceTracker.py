@@ -68,16 +68,38 @@ class FinanceTable():
         
     def avgCost(self,date):
         if type(self.table) == pd.DataFrame:
-            nWords = len(date)
-            itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
+            itemsOnDate = self.table.groupby(pd.Grouper(freq = 'Y'))
             return itemsOnDate['cost'].mean()
         
-    def analyzeCost(): #Prints a line graph, with date as X and spendings as Y, draws average cost line
+    def analyzeCost(self,date,analyze = 'month'): #Prints a line graph, with date as X and spendings as Y, draws average cost line
+        '''    
+        #Takes two types of analyze: 
+            Year: Analyzes monthly expenditure in year
+            Month: Analyzes daily expenditure in month
+        '''  
+        nWords = len(date)
+        if analyze == 'month':
+            itemsOnMonth = self.table.loc[self.table['date'][nWords] == date]
+            itemsOnMonth['date'] = pd.to_datetime(itemsOnMonth['date'])
+            itemsOnMonth.sort_values(by = 'date',inplace = True)
+            itemsOnMonth = itemsOnMonth.groupby(pd.Grouper(freq = 'D'))
+            itemsOnMonth.plot.line(itemsOnMonth['date'],itemsOnMonth['cost'].sum())
+            itemsOnMonth.plot.line(itemsOnMonth['date'],[self.avgCost(date)]*itemsOnMonth.size)
+            
+        if analyze == 'year':
+            #use findDateCost to find cost per month for 12 months
+            itemsOnYear = self.table.loc[self.table['date'][nWords] == date]
+            itemsOnYear = itemsOnYear.groupby('date')['cost'].sum()
+            itemsOnYear['date'] = pd.to_datetime(itemsOnYear['date'])
+            itemsOnYear.sort_values(by = 'date',inplace = True)
+            itemsOnYear= itemsOnYear.groupby(pd.Grouper(freq = 'M'))
+            itemsOnYear.plot.line(itemsOnYear['date'],itemsOnYear['cost'].sum())
+            itemsOnYear.plot.line(itemsOnYear['date'],[self.avgCost(date)]*itemsOnYear.size)
         
             
-        
-        
-
+            
+            
+            
 
 def is_valid_date(date):
     try:
@@ -137,9 +159,22 @@ def askhelper():
             break
     return changes
             
-            
+def addItem(table):
+    changes = askhelper()
+    save(table,changes)  
+
+def deleteRecord(table):
+    pass
+
+def analyzeItem(table):
+    pass
+
+def maxCost(table):
+    pass
+
+def dateCost(table):
+    pass      
         
-    
             
 
 

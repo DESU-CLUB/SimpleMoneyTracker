@@ -23,13 +23,8 @@ class FinanceTable():
         return pd.read_csv(path)
 
     def writeTable(self,writePath,changes):
-        if self.readPath == None:
-            self.table = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
-            self.table.to_csv(writePath)
-        else:
-            self.table.concat(pd.DataFrame(changes),0)
-            self.table.to_csv(writePath)
-            
+        self.table.to_csv(writePath)
+        
     def findmaxCost(self,date):
         '''
         Finds maximum cost in table, and which YY-MM-DD it was
@@ -95,6 +90,13 @@ class FinanceTable():
             itemsOnYear= itemsOnYear.groupby(pd.Grouper(freq = 'M'))
             itemsOnYear.plot.line(itemsOnYear['date'],itemsOnYear['cost'].sum())
             itemsOnYear.plot.line(itemsOnYear['date'],[self.avgCost(date)]*itemsOnYear.size)
+            
+    def update(self,changes):
+        if self.readPath == None:
+            self.table = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
+        else:
+            self.table.concat(pd.DataFrame(changes),0)
+        
         
             
             
@@ -107,6 +109,8 @@ def is_valid_date(date):
     except ValueError:
         return  False
     return True
+
+
 
 def save(table,changes):
     save = input('Would you like to save changes[Y/N]: ')
@@ -161,10 +165,20 @@ def askhelper():
             
 def addItem(table):
     changes = askhelper()
-    save(table,changes)  
+    table.update(changes)
+    save(table)  
 
-def deleteRecord(table):
+def deleteRecord(table,date,item):
+    #find item then deletes it
+    #give corresponding date as index if item has multiple entries
+    if type(table.table) == pd.DataFrame and table.table.size > 0:
+        table.table.loc[table.table['item'] == item & table.table['date'] == date]
+    else:
+        print('Table not generated yet/fully deleted')
     pass
+def drop(table):
+    if table.readPath != None and table.readPath.endswith('.csv'):
+        os.remove(table.readPath)
 
 def analyzeItem(table):
     pass

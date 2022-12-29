@@ -31,7 +31,7 @@ class FinanceTable():
     def writeTable(self,writePath,changes):
         self.table.to_csv(writePath)
         
-    def findmaxCost(self,date):
+    def findmaxCost(self,date,datetype):
         '''
         Finds maximum cost in table, and which YY-MM-DD it was
         Date can be set to find max cost on date
@@ -42,12 +42,9 @@ class FinanceTable():
 
         '''
         if type(self.table) == pd.DataFrame:
-            if date != 'None':
-                nWords = len(date)
-                itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
-            else:
-                itemsOnDate = self.table
-                
+            
+            itemsOnDate = self.table
+            itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(datetype) == date]
             maxCostRow = itemsOnDate.loc['cost' == itemsOnDate.max(0)['cost']]
                 
                 
@@ -61,7 +58,6 @@ class FinanceTable():
             
     def findDateCost(self,date,datetype,verbose = 0):#Takes specific day of month and year as input, finds cost in day
         if type(self.table) == pd.DataFrame:
-            nWords = len(date)
             itemsOnDate = self.table.groupby(pd.Grouper(freq = 'Y'))
             itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
             if verbose:
@@ -72,40 +68,26 @@ class FinanceTable():
         if type(self.table) == pd.DataFrame:
             itemsOnDate = self.table
             itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
-            if datetype == 'M':
-                itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period('M') == date]
+            itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(datetype) == date]
             itemsOnDate = itemsOnDate.groupby(pd.Grouper(freq = 'D'))
             return itemsOnDate['cost'].mean()
         
-    def analyzeCost(self,date,analyze = 'month'): #Prints a line graph, with date as X and spendings as Y, draws average cost line
+    def analyzeCost(self,date,analyze = 'M'): #Prints a line graph, with date as X and spendings as Y, draws average cost line
         '''    
         #Takes two types of analyze: 
             Year: Analyzes monthly expenditure in year
             Month: Analyzes daily expenditure in month
         '''  
-        nWords = len(date)
-        if analyze == 'month':
-            itemsOnMonth = self.table
-            itemsOnMonth['date'] = pd.to_datetime(self.table['date'])
-            
-            itemsOnMonth = itemsOnMonth.loc[itemsOnMonth['date'].dt.to_period('M') == date]
-            
-            
-            itemsOnMonth.sort_values(by = 'date',inplace = True)
-            itemsOnMonth = itemsOnMonth.groupby(pd.Grouper(freq = 'D'))
-            itemsOnMonth.plot.line(itemsOnMonth['date'],itemsOnMonth['cost'].sum())
-            itemsOnMonth.plot.line(itemsOnMonth['date'],[self.avgCost(date)]*itemsOnMonth.size)
-            
-        if analyze == 'year':
-            #use findDateCost to find cost per month for 12 months
-            itemsOnYear = self.table.loc[self.table['date'][nWords] == date]
-            itemsOnYear = itemsOnYear.groupby('date')['cost'].sum()
-            itemsOnYear['date'] = pd.to_datetime(itemsOnYear['date'])
-            itemsOnYear.sort_values(by = 'date',inplace = True)
-            itemsOnYear= itemsOnYear.groupby(pd.Grouper(freq = 'M'))
-            itemsOnYear.plot.line(itemsOnYear['date'],itemsOnYear['cost'].sum())
-            itemsOnYear.plot.line(itemsOnYear['date'],[self.avgCost(date)]*itemsOnYear.size)
-            
+        itemsOnDate = self.table
+        itemsOnDate['date'] = pd.to_datetime(self.table['date'])
+        analyzeDict = {'M':'D','Y':'M'}
+     
+        itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(analyze) == date]
+        itemsOnDate.sort_values(by = 'date',inplace = True)
+        itemsOnDate = itemsOnDate.groupby(pd.Grouper(freq = analyzeDict[analyze]))
+        itemsOnDate.plot.line(itemsOnDate['date'],itemsOnDate['cost'].sum())
+        itemsOnDate.plot.line(itemsOnDate['date'],[self.avgCost(date,analyze)]*itemsOnDate.size)
+        
    
     def update(self,changes):
         if self.readPath == None:

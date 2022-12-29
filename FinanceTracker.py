@@ -31,7 +31,7 @@ class FinanceTable():
     def writeTable(self,writePath,changes):
         self.table.to_csv(writePath)
         
-    def findmaxCost(self,date,datetype):
+    def findmaxCost(self,date,datetype = 'D'):
         '''
         Finds maximum cost in table, and which YY-MM-DD it was
         Date can be set to find max cost on date
@@ -45,21 +45,18 @@ class FinanceTable():
             
             itemsOnDate = self.table
             itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(datetype) == date]
-            maxCostRow = itemsOnDate.loc['cost' == itemsOnDate.max(0)['cost']]
+            maxCostRow = itemsOnDate.loc[itemsOnDate['cost'] == itemsOnDate['cost'].max()]
                 
-                
-            cost = maxCostRow['cost']
-            date = maxCostRow['date']
-            item = maxCostRow['item']
-            print('---------Returning item with max cost-------------')
-            print(f'{item} bought on {date} had max cost of {cost}')
+            
+            print('---------Returning item(s) with max cost-------------')
+            print(maxCostRow)
         else:
             print('Invalid DataType, Generate table first!')
             
-    def findDateCost(self,date,datetype,verbose = 0):#Takes specific day of month and year as input, finds cost in day
+    def findDateCost(self,date,datetype = 'D',verbose = 0):#Takes specific day of month and year as input, finds cost in day/month/year
         if type(self.table) == pd.DataFrame:
-            itemsOnDate = self.table.groupby(pd.Grouper(freq = 'Y'))
-            itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
+            itemsOnDate = self.table.groupby(pd.Grouper(freq = datetype))
+            itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(datetype) == date]
             if verbose:
                 print(itemsOnDate.loc[:,itemsOnDate.columns != 'date'])
             return itemsOnDate['cost'].sum()

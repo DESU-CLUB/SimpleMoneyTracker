@@ -1,5 +1,5 @@
 import pandas as pd
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import datetime
 import os
 
@@ -27,7 +27,7 @@ class FinanceTable():
         return pd.read_csv(path)
 
     def writeTable(self,writePath):
-        self.table.to_csv(writePath)
+        self.table.to_csv(writePath,index = False)
         self.readPath = writePath
 
     def update(self,changes):
@@ -37,16 +37,16 @@ class FinanceTable():
             self.table.concat(pd.DataFrame(changes),0)     
 
     def deleteItem(self,item,date):
-        initial = self.table.size
-        if self.table == pd.DataFrame and self.table.size >0:
-            self.table.drop(self.table.loc[(self.table['item'] == item) & (self.table['date'] == date)])
-            final = self.table.size
-            if final == initial:
-                print('Nothing was deleted, as it was not found in table')
+        if type(self.table) == pd.DataFrame and self.table.size >0:
+            result = self.table.loc[(self.table['item'] == item) & (self.table['date'] == date)]
+            if result.size >0:
+                self.table.drop(result.index,inplace = True)
+            else:
+                print('No items to delete')
         else:
             print('No items to delete')
 
-    def findmaxCost(self,date,dateType = 'D'):
+    def findMaxCost(self,date,dateType = 'D'):
         '''
         Finds maximum cost in table, and which YY-MM-DD it was
         Date can be set to find max cost on date
@@ -59,6 +59,7 @@ class FinanceTable():
         if type(self.table) == pd.DataFrame:
             
             itemsOnDate = self.table
+            itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
             itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
             maxCostRow = itemsOnDate.loc[itemsOnDate['cost'] == itemsOnDate['cost'].max()]
             
@@ -68,12 +69,15 @@ class FinanceTable():
             else:
                 print('---------Returning item(s) with max cost-------------')
                 print(maxCostRow)
+                print()
+                print(f'Max Cost is {maxCostRow["cost"]}')
         else:
             print('Invalid DataType, Generate table first!')
             
-    def findDateCost(self,date,dateType = 'D',verbose = 0):#Takes specific day of month and year as input, finds total cost in day/month/year
+    def findTotalCost(self,date,dateType = 'D',verbose = 0):#Takes specific day of month and year as input, finds total cost in day/month/year
         if type(self.table) == pd.DataFrame:
-            itemsOnDate = self.table.groupby(pd.Grouper(freq = dateType))
+            itemsOnDate = self.table
+            itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
             itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
             if itemsOnDate.size == 0:
                 print('No entries on given date/range')
@@ -83,14 +87,16 @@ class FinanceTable():
             return itemsOnDate['cost'].sum()
         
     def avgCost(self,date,dateType):
+        avgDict = {'M':'D','Y':'M'}
         if type(self.table) == pd.DataFrame:
             itemsOnDate = self.table
             itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
             itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
             if itemsOnDate.size == 0:
                 return 0
-            itemsOnDate = itemsOnDate.groupby(pd.Grouper(freq = 'D'))
-            return itemsOnDate['cost'].mean()
+            itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
+            itemsOnDate = itemsOnDate.groupby(pd.Grouper(key = 'date',freq = avgDict[dateType]))
+            return itemsOnDate['cost'].sum().mean()
         
     def analyzeCost(self,date,analyze = 'M'): #Prints a line graph, with date as X and spendings as Y, draws average cost line
         '''    
@@ -107,9 +113,14 @@ class FinanceTable():
             print('No entries in given range')
         else:
             itemsOnDate.sort_values(by = 'date',inplace = True)
-            itemsOnDate = itemsOnDate.groupby(pd.Grouper(freq = analyzeDict[analyze]))
-            itemsOnDate.plot.line(itemsOnDate['date'],itemsOnDate['cost'].sum())
-            itemsOnDate.plot.line(itemsOnDate['date'],[self.avgCost(date,analyze)]*itemsOnDate.size)
+            itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
+            dates = itemsOnDate['date'].drop_duplicates().to_numpy()
+            print(dates)
+            itemsOnDate = itemsOnDate.groupby(pd.Grouper(key = 'date',freq = analyzeDict[analyze]))
+            
+            plt.plot(dates,itemsOnDate['cost'].sum(),'ro')
+            plt.plot(dates,[self.avgCost(date,analyze)]*len(itemsOnDate),'bo')
+            plt.show()
         
    
     
@@ -124,7 +135,8 @@ class MainHelper():
 
 
     def optionPrinter(self):
-        print('1: Add item to table\n\
+        print('\
+           1: Add item to table\n\
            2: Delete item from table\n\
            3: Check Maximum Cost\n\
            4: Check Total Cost\n\
@@ -136,11 +148,11 @@ class MainHelper():
     def is_valid_date(self,date,dateType = 'D'):
         try:
             if dateType == 'D':
-                datetime.datetime.strptime(date,'%YYYY-%MM-%DD')
+                datetime.datetime.strptime(date,'%Y-%m-%d')
             elif dateType == 'M':
-                datetime.datetime.strptime(date,'%YYYY-%MM')
+                datetime.datetime.strptime(date,'%Y-%m')
             elif dateType == 'Y':
-                datetime.datetime.strptime(date,'%YYYY')
+                datetime.datetime.strptime(date,'%Y')
             else:
                 raise ValueError
                 
@@ -167,7 +179,10 @@ class MainHelper():
                     self.table.writeTable(self.table.readPath)
                 
             if self.table.readPath == None or ow in ['n','N']:
-                path = input('Input path to write to: ')
+                path = input('Input path to write to (include name of file): ')
+                while not path.endswith('.csv'):
+                    print('Invalid path')
+                    path = input('Input path to write to (include name of file): ')
                 self.table.writeTable(path)
                 self.path = path
 
@@ -207,13 +222,16 @@ class MainHelper():
     def addItem(self):
         changes = self.askhelper()
         self.table.update(changes)
-        self.save(self.table)  
+        self.save()  
+
+    def length(self):
+        return self.table.table.size
 
     def deleteRecord(self):
         #find item then deletes it
         #give corresponding date as index if item has multiple entries
         item = input('Input item to delete: ')
-        date = input('Input date item was purchased')
+        date = input('Input the date item was purchased (YYYY-MM-DD): ')
         self.table.deleteItem(item,date)
         self.save()
 
@@ -224,16 +242,16 @@ class MainHelper():
             print('Invalid path')
 
     def analyzeItem(self):
-        analyze = input(' Would You like to analyze month or year (M/Y)')
+        analyze = input(' Would You like to analyze month or year (M/Y): ')
         if analyze not in ['M','Y','m','y']:
             print('Enter valid input')
-            analyze = input(' Would You like to analyze month or year (M/Y)')
+            analyze = input(' Would You like to analyze month or year (M/Y): ')
 
     
-        date = input(f'Enter date to analyze ({self.dateFormat[analyze]}): ')
-        while not self.is_valid_date(date,analyze):
+        date = input(f'Enter date to analyze ({self.dateFormat[analyze.upper()]}): ')
+        while not self.is_valid_date(date,analyze.upper()):
             print('Enter valid date')
-            date = input(f'Enter date to analyze ({self.dateFormat[analyze]}): ')
+            date = input(f'Enter date to analyze ({self.dateFormat[analyze.upper()]}): ')
 
         self.table.analyzeCost(date,analyze.upper())
 
@@ -244,75 +262,92 @@ class MainHelper():
             print('Invalid date type received')
             dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
 
-        date = input(f'Enter date to check max cost ({self.dateFormat[dateType]}): ')
-        while not self.is_valid_date(date,dateType):
+        date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
+        while not self.is_valid_date(date,dateType.upper()):
             print('Enter valid date')
-            date = input(f'Enter date to check max cost ({self.dateFormat[dateType]}): ')
+            date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
 
-        self.table.findMaxCost(date,dateType)
+        self.table.findMaxCost(date,dateType.upper())
 
             
 
     def totalCost(self):
-        dateType = input('Would you like to check total cost for day/month/year (D/M/Y)')
+        dateType = input('Would you like to check total cost for day/month/year (D/M/Y): ')
         while type(dateType) == str and dateType.upper() not in ['D','M','Y']:
             print('Invalid date type received')
-            dateType = input('Would you like to check total cost for day/month/year (D/M/Y)')
+            dateType = input('Would you like to check total cost for day/month/year (D/M/Y): ')
 
 
 
-        date = input('Enter date to check total cost (YYYY-MM-DD): ')
-        while not self.is_valid_date(date,dateType):
+        date = input(f'Enter date to check total cost ({self.dateFormat[dateType.upper()]}): ')
+        while not self.is_valid_date(date,dateType.upper()):
             print('Enter valid date')
-            date = input('Enter date to analyze (YYYY-MM-DD): ')
+            date = input(f'Enter date to check total cost ({self.dateFormat[dateType.upper()]}): ')
 
-        verbose = input('Would you like output all items purchased on date/range (Y/N')
+        verbose = input('Would you like output all items purchased on date/range (Y/N) :')
         while type(verbose) == str and verbose.upper() not in ['Y','N']:
             print('Invalid input')
-            verbose = input('Would you like output all items purchased on date/range (Y/N')
+            verbose = input('Would you like output all items purchased on date/range (Y/N) :')
 
-        print(self.dateCost(date,dateType, 0 if verbose.upper() == 'N' else 1))
+        print(f'Total cost for {date} is ${self.table.findTotalCost(date,dateType.upper(),0 if verbose.upper() == "N" else 1)}')
         
 
         
         
 def main(helper,path):
+    if helper == None:
+        return
     if path == '':
         print('Proceeding to generate table..........')
         helper.addItem()
+    print()
     print('What would you like to do today?')
     helper.optionPrinter()
     
 
-    option = input('Choose option: ')
+    
     while True:
-        if option == '1':
+        if helper.length() == 0:
+            print('Proceeding to generate table..........')
             helper.addItem()
+
+        option = input('Choose option: ')
+        if option == '1':
             print('Adding item......')
+            helper.addItem()
+            
         elif option == '2':
-            helper.deleteRecord()
             print('Deleting item......')
+            helper.deleteRecord()
+            
         elif option == '3':
-            helper.maxCost()
             print('Finding max cost......')
+            helper.maxCost()
+
         elif option == '4':
-            helper.totalCost()
             print('Finding total cost......')
+            helper.totalCost()            
+
         elif option == '5':
-            helper.analyzeItem()
             print('Analyzing cost......')
+            helper.analyzeItem()
+         
         elif option == '6':
             print('Are you sure?')
             cfm = input('Type in \"DELETE\" to confirm deletion of table: ')
             if cfm == 'DELETE':
                 print('Dropping table.......')
                 helper.drop()
-                return
+                break
+
         elif option == '7':
             print('Have a nice day')
-            return
+            break
         elif option == '8':
             helper.optionPrinter()
+
+        elif option == '9':
+            print(helper.table.table)
         else:
             print('Invalid option')
 
@@ -324,8 +359,11 @@ def initialise():
     path = input("Input Path for table (.csv) [Press Enter if making new table]: ")
     if path == '':
         table = FinanceTable()
-    else:
+    elif path.endswith('.csv'):
         table = FinanceTable(path)
+    else:
+        print('Invalid Path')
+        return(None,None)
     
     helper = MainHelper(table)
     return (helper,path)

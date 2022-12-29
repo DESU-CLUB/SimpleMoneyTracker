@@ -26,8 +26,9 @@ class FinanceTable():
     def loadTable(self,path):
         return pd.read_csv(path)
 
-    def writeTable(self,writePath,changes):
+    def writeTable(self,writePath):
         self.table.to_csv(writePath)
+        self.readPath = writePath
 
     def update(self,changes):
         if self.readPath == None:
@@ -36,8 +37,12 @@ class FinanceTable():
             self.table.concat(pd.DataFrame(changes),0)     
 
     def deleteItem(self,item,date):
+        initial = self.table.size
         if self.table == pd.DataFrame and self.table.size >0:
             self.table.drop(self.table.loc[(self.table['item'] == item) & (self.table['date'] == date)])
+            final = self.table.size
+            if final == initial:
+                print('Nothing was deleted, as it was not found in table')
         else:
             print('No items to delete')
 
@@ -66,7 +71,7 @@ class FinanceTable():
         else:
             print('Invalid DataType, Generate table first!')
             
-    def findDateCost(self,date,dateType = 'D',verbose = 0):#Takes specific day of month and year as input, finds cost in day/month/year
+    def findDateCost(self,date,dateType = 'D',verbose = 0):#Takes specific day of month and year as input, finds total cost in day/month/year
         if type(self.table) == pd.DataFrame:
             itemsOnDate = self.table.groupby(pd.Grouper(freq = dateType))
             itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
@@ -115,8 +120,19 @@ class FinanceTable():
 class MainHelper():
     def __init__(self,table):
         self.table = table
-        self.main()
-        
+        self.dateFormat = {'D':'YYYY-MM-DD','M':'YYYY-MM','Y':'YYYY'}
+
+
+    def optionPrinter(self):
+        print('1: Add item to table\n\
+           2: Delete item from table\n\
+           3: Check Maximum Cost\n\
+           4: Check Total Cost\n\
+           5: Analyze Cost over a range\n\
+           6: Delete Entire Table\n\
+           7: Quit Application\n\
+           8: Restate Options\n\n\n')
+
     def is_valid_date(self,date,dateType = 'D'):
         try:
             if dateType == 'D':
@@ -139,6 +155,8 @@ class MainHelper():
         while save not in ['Y','N','y','n']:
             print('Valid answer required')
             save = input('Would you like to save changes[Y/N]: ')
+        
+        ow = 'N'
         if save in ['y','Y']:
             if self.table.readPath != None:
                 ow = input('Would you like to save changes into same file[Y/N]: ')
@@ -151,6 +169,7 @@ class MainHelper():
             if self.table.readPath == None or ow in ['n','N']:
                 path = input('Input path to write to: ')
                 self.table.writeTable(path)
+                self.path = path
 
                 
         
@@ -196,11 +215,13 @@ class MainHelper():
         item = input('Input item to delete: ')
         date = input('Input date item was purchased')
         self.table.deleteItem(item,date)
-        pass
+        self.save()
 
     def drop(self):
         if self.table.readPath != None and self.table.readPath.endswith('.csv'):
             os.remove(self.table.readPath)
+        else:
+            print('Invalid path')
 
     def analyzeItem(self):
         analyze = input(' Would You like to analyze month or year (M/Y)')
@@ -208,57 +229,116 @@ class MainHelper():
             print('Enter valid input')
             analyze = input(' Would You like to analyze month or year (M/Y)')
 
-        if analyze.upper() == 'M':
-            date = input('Enter date to analyze (YYYY-MM): ')
-            while not self.is_valid_date(date,'M'):
-                print('Enter valid date')
-                date = input('Enter date to analyze (YYYY-MM): ')
+    
+        date = input(f'Enter date to analyze ({self.dateFormat[analyze]}): ')
+        while not self.is_valid_date(date,analyze):
+            print('Enter valid date')
+            date = input(f'Enter date to analyze ({self.dateFormat[analyze]}): ')
 
-        else:
-            date = input('Enter date to analyze (YYYY): ')
-            while not self.is_valid_date(date,'Y'):
-                print('Enter valid date')
-                date = input('Enter date to analyze (YYYY): ')
-        
         self.table.analyzeCost(date,analyze.upper())
 
     def maxCost(self):
-        dateFormat = {'D':'YYYY-MM-DD','M':'YYYY-MM','Y':'YYYY'}
+        
         dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
         while dateType.upper() not in ['D','M','Y']:
             print('Invalid date type received')
             dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
-            
 
-    
-        date = input(f'Enter date to check max cost ({dateType}): ')
+        date = input(f'Enter date to check max cost ({self.dateFormat[dateType]}): ')
         while not self.is_valid_date(date,dateType):
             print('Enter valid date')
-            date = input(f'Enter date to check max cost ({dateType}): ')
+            date = input(f'Enter date to check max cost ({self.dateFormat[dateType]}): ')
 
         self.table.findMaxCost(date,dateType)
-        
-        
-        
 
             
-            
 
-    def dateCost(self):
-        date = input('Enter date to analyze (YYYY-MM-DD): ')
-        while not self.is_valid_date(date):
+    def totalCost(self):
+        dateType = input('Would you like to check total cost for day/month/year (D/M/Y)')
+        while type(dateType) == str and dateType.upper() not in ['D','M','Y']:
+            print('Invalid date type received')
+            dateType = input('Would you like to check total cost for day/month/year (D/M/Y)')
+
+
+
+        date = input('Enter date to check total cost (YYYY-MM-DD): ')
+        while not self.is_valid_date(date,dateType):
             print('Enter valid date')
             date = input('Enter date to analyze (YYYY-MM-DD): ')
+
+        verbose = input('Would you like output all items purchased on date/range (Y/N')
+        while type(verbose) == str and verbose.upper() not in ['Y','N']:
+            print('Invalid input')
+            verbose = input('Would you like output all items purchased on date/range (Y/N')
+
+        print(self.dateCost(date,dateType, 0 if verbose.upper() == 'N' else 1))
+        
+
         
         
-            
+def main(helper,path):
+    if path == '':
+        print('Proceeding to generate table..........')
+        helper.addItem()
+    print('What would you like to do today?')
+    helper.optionPrinter()
+    
+
+    option = input('Choose option: ')
+    while True:
+        if option == '1':
+            helper.addItem()
+            print('Adding item......')
+        elif option == '2':
+            helper.deleteRecord()
+            print('Deleting item......')
+        elif option == '3':
+            helper.maxCost()
+            print('Finding max cost......')
+        elif option == '4':
+            helper.totalCost()
+            print('Finding total cost......')
+        elif option == '5':
+            helper.analyzeItem()
+            print('Analyzing cost......')
+        elif option == '6':
+            print('Are you sure?')
+            cfm = input('Type in \"DELETE\" to confirm deletion of table: ')
+            if cfm == 'DELETE':
+                print('Dropping table.......')
+                helper.drop()
+                return
+        elif option == '7':
+            print('Have a nice day')
+            return
+        elif option == '8':
+            helper.optionPrinter()
+        else:
+            print('Invalid option')
+
+    
 
 
-if __name__ == '__main__':
-    path = input("Input Path for table (.csv): ")
+def initialise():
+    print('---------Welcome to Finance Tracker------------')
+    path = input("Input Path for table (.csv) [Press Enter if making new table]: ")
     if path == '':
         table = FinanceTable()
     else:
         table = FinanceTable(path)
+    
+    helper = MainHelper(table)
+    return (helper,path)
+            
+
+
+if __name__ == '__main__':
+    main(*initialise())
+
+    
+
+
+
+   
    
     

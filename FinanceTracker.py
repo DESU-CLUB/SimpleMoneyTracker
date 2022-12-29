@@ -1,6 +1,12 @@
 import pandas as pd
 import matplotlib as plt
 import datetime
+import os
+
+
+#TODO: Finish refactoring FinanceTable methods touse Grouper and dt instead of nwords
+#TODO: Finish the impl of helper functions
+#TODO: Finish main program
 
 class FinanceTable():
     '''
@@ -53,17 +59,22 @@ class FinanceTable():
         else:
             print('Invalid DataType, Generate table first!')
             
-    def findDateCost(self,date,verbose = 0):#Takes specific day of month and year as input, finds cost in day
+    def findDateCost(self,date,datetype,verbose = 0):#Takes specific day of month and year as input, finds cost in day
         if type(self.table) == pd.DataFrame:
             nWords = len(date)
+            itemsOnDate = self.table.groupby(pd.Grouper(freq = 'Y'))
             itemsOnDate = self.table.loc[self.table['date'][nWords] == date]
             if verbose:
                 print(itemsOnDate.loc[:,itemsOnDate.columns != 'date'])
             return itemsOnDate['cost'].sum()
         
-    def avgCost(self,date):
+    def avgCost(self,date,datetype):
         if type(self.table) == pd.DataFrame:
-            itemsOnDate = self.table.groupby(pd.Grouper(freq = 'Y'))
+            itemsOnDate = self.table
+            itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
+            if datetype == 'M':
+                itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period('M') == date]
+            itemsOnDate = itemsOnDate.groupby(pd.Grouper(freq = 'D'))
             return itemsOnDate['cost'].mean()
         
     def analyzeCost(self,date,analyze = 'month'): #Prints a line graph, with date as X and spendings as Y, draws average cost line
@@ -74,8 +85,12 @@ class FinanceTable():
         '''  
         nWords = len(date)
         if analyze == 'month':
-            itemsOnMonth = self.table.loc[self.table['date'][nWords] == date]
-            itemsOnMonth['date'] = pd.to_datetime(itemsOnMonth['date'])
+            itemsOnMonth = self.table
+            itemsOnMonth['date'] = pd.to_datetime(self.table['date'])
+            
+            itemsOnMonth = itemsOnMonth.loc[itemsOnMonth['date'].dt.to_period('M') == date]
+            
+            
             itemsOnMonth.sort_values(by = 'date',inplace = True)
             itemsOnMonth = itemsOnMonth.groupby(pd.Grouper(freq = 'D'))
             itemsOnMonth.plot.line(itemsOnMonth['date'],itemsOnMonth['cost'].sum())
@@ -91,21 +106,28 @@ class FinanceTable():
             itemsOnYear.plot.line(itemsOnYear['date'],itemsOnYear['cost'].sum())
             itemsOnYear.plot.line(itemsOnYear['date'],[self.avgCost(date)]*itemsOnYear.size)
             
+   
     def update(self,changes):
         if self.readPath == None:
             self.table = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
         else:
-            self.table.concat(pd.DataFrame(changes),0)
-        
-        
+            self.table.concat(pd.DataFrame(changes),0)     
             
             
             
             
 
-def is_valid_date(date):
+def is_valid_date(date,datetype = 'd'):
     try:
-        datetime.datetime.strptime(date,'%m-%d')
+        if datetype == 'd':
+            datetime.datetime.strptime(date,'%YYYY-%MM-%dd')
+        elif datetype == 'm':
+            datetime.datetime.strptime(date,'%YYYY-%MM')
+        elif datetype == 'y':
+            datetime.datetime.strptime(date,'%YYYY')
+        else:
+            raise ValueError
+            
     except ValueError:
         return  False
     return True
@@ -124,11 +146,11 @@ def save(table,changes):
                 print('Valid answer required')
                 ow = input('Would you like to save changes into same file[Y/N]: ')
             if ow in ['y','Y']:
-                table.writeTable(table.readPath,changes)
+                table.writeTable(table.readPath)
             
         if table.readPath == None or ow in ['n','N']:
             path = input('Input path to write to: ')
-            table.writeTable(path,changes)
+            table.writeTable(path)
 
             
     
@@ -145,7 +167,7 @@ def askhelper():
             cost = input('Please enter cost again: ')
         
 
-        date = input('When did you buy it (YY-MM-DD): ')
+        date = input('When did you buy it (YYYY-MM-DD): ')
         while not is_valid_date(date):
             date = input('Please enter date again: ')
 
@@ -172,21 +194,41 @@ def deleteRecord(table,date,item):
     #find item then deletes it
     #give corresponding date as index if item has multiple entries
     if type(table.table) == pd.DataFrame and table.table.size > 0:
-        table.table.loc[table.table['item'] == item & table.table['date'] == date]
+        table.table.drop(table.table.loc[(table.table['item'] == item) & (table.table['date'] == date)])
     else:
         print('Table not generated yet/fully deleted')
-    pass
+
 def drop(table):
     if table.readPath != None and table.readPath.endswith('.csv'):
         os.remove(table.readPath)
 
 def analyzeItem(table):
-    pass
+    analyze = input(' Would You like to analyze month or year (M/Y)')
+    if analyze not in ['M','Y','m','y']:
+        print('Enter valid input')
+        analyze = input(' Would You like to analyze month or year (M/Y)')
+    if analyze.upper() == 'M':
+        date = input('Enter date to analyze (YYYY-MM): ')
+        while not is_valid_date(date,'m'):
+            print('Enter valid date')
+            date = input('Enter date to analyze (YYYY-MM): ')
+        table.analyzeCost(date)
+    else:
+        date = input('Enter date to analyze (YYYY): ')
+        while not is_valid_date(date,'y'):
+            print('Enter valid date')
+            date = input('Enter date to analyze (YYYY): ')
+        table.analyzeCost(date,'y')
 
 def maxCost(table):
     pass
+    
 
 def dateCost(table):
+    date = input('Enter date to analyze (YYYY-MM-DD): ')
+    while not is_valid_date(date):
+        print('Enter valid date')
+        date = input('Enter date to analyze (YYYY-MM-DD): ')
     pass      
         
             
@@ -198,7 +240,5 @@ if __name__ == '__main__':
         table = FinanceTable()
     else:
         table = FinanceTable(path)
-    changes = askhelper()
-    save(table,changes)
-        
+   
     

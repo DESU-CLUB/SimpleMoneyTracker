@@ -51,7 +51,7 @@ class FinanceTable():
         if type(self.table) == pd.DataFrame:
             itemsOnDate = self.table
             itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
-            itemsOnDate['date'] = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
+            itemsOnDate = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
 
             if itemsOnDate.size == 0:
                 print('No data found')
@@ -87,7 +87,7 @@ class FinanceTable():
                 print('---------Returning item(s) with max cost-------------')
                 print(maxCostRow)
                 print()
-                print(f'Max Cost is {maxCostRow["cost"]}')
+                print(f'Max Cost is {maxCostRow["cost"].values}')
         else:
             print('Invalid DataType, Generate table first!')
             
@@ -224,7 +224,7 @@ class MainHelper():
 
             date = input('When did you buy it (YYYY-MM-DD): ')
             while not self.is_valid_date(date):
-                date = input('Please enter date again: ')
+                date = input('Please enter date again (YYYY-MM-DD): ')
 
 
             remarks = input('Any other remarks: ')
@@ -257,15 +257,15 @@ class MainHelper():
         self.save()
 
     def findItemOnDate(self):
-        dateType = input('Would you like to check max cost for day/month/year (D/M/Y): ')
+        dateType = input('Would you like to find items for day/month/year (D/M/Y): ')
         while dateType.upper() not in ['D','M','Y']:
             print('Invalid date type received')
-            dateType = input('Would you like to check max cost for day/month/year (D/M/Y): ')
+            dateType = input('Would you like to find items for day/month/year (D/M/Y): ')
 
         date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
         while not self.is_valid_date(date,dateType.upper()):
             print('Enter valid date')
-            date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
+            date = input(f'Enter date to find items ({self.dateFormat[dateType.upper()]}): ')
 
         self.table.checkItems(date,dateType.upper())
 

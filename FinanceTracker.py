@@ -4,9 +4,9 @@ import datetime
 import os
 
 
-#TODO: Finish refactoring FinanceTable methods touse Grouper and dt instead of nwords
-#TODO: Finish the impl of helper functions
-#TODO: Finish main program
+#TODO: Create SELECT for PD dataframe, add avgcost functionality into main
+#TODO: Create dummy data for testing purposes
+##TODO: Increase range of avgcost to week???
 
 class FinanceTable():
     '''
@@ -46,6 +46,23 @@ class FinanceTable():
         else:
             print('No items to delete')
 
+
+    def checkItems(self,date,dateType): #Check items on given date
+        if type(self.table) == pd.DataFrame:
+            itemsOnDate = self.table
+            itemsOnDate['date'] = pd.to_datetime(itemsOnDate['date'])
+            itemsOnDate['date'] = itemsOnDate.loc[itemsOnDate['date'].dt.to_period(dateType) == date]
+
+            if itemsOnDate.size == 0:
+                print('No data found')
+
+            else:
+                print(f'---------Returning item(s) purchased on {date}-------------')
+                print(itemsOnDate)
+        else:
+            print('Invalid DataType, Generate table first!')
+            
+           
     def findMaxCost(self,date,dateType = 'D'):
         '''
         Finds maximum cost in table, and which YY-MM-DD it was
@@ -118,8 +135,8 @@ class FinanceTable():
             print(dates)
             itemsOnDate = itemsOnDate.groupby(pd.Grouper(key = 'date',freq = analyzeDict[analyze]))
             
-            plt.plot(dates,itemsOnDate['cost'].sum(),'ro')
-            plt.plot(dates,[self.avgCost(date,analyze)]*len(itemsOnDate),'bo')
+            plt.plot(dates,itemsOnDate['cost'].sum(),'r-')
+            plt.plot(dates,[self.avgCost(date,analyze)]*len(itemsOnDate),'b-')
             plt.show()
         
    

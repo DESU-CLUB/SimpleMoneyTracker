@@ -257,10 +257,10 @@ class MainHelper():
         self.save()
 
     def findItemOnDate(self):
-        dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
+        dateType = input('Would you like to check max cost for day/month/year (D/M/Y): ')
         while dateType.upper() not in ['D','M','Y']:
             print('Invalid date type received')
-            dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
+            dateType = input('Would you like to check max cost for day/month/year (D/M/Y): ')
 
         date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
         while not self.is_valid_date(date,dateType.upper()):
@@ -292,10 +292,10 @@ class MainHelper():
 
     def maxCost(self):
         
-        dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
+        dateType = input('Would you like to check max cost for day/month/year (D/M/Y): ')
         while dateType.upper() not in ['D','M','Y']:
             print('Invalid date type received')
-            dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
+            dateType = input('Would you like to check max cost for day/month/year (D/M/Y): ')
 
         date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
         while not self.is_valid_date(date,dateType.upper()):

@@ -152,15 +152,19 @@ class MainHelper():
 
 
     def optionPrinter(self):
-        print('\
-           1: Add item to table\n\
-           2: Delete item from table\n\
-           3: Check Maximum Cost\n\
-           4: Check Total Cost\n\
-           5: Analyze Cost over a range\n\
-           6: Delete Entire Table\n\
-           7: Quit Application\n\
-           8: Restate Options\n\n\n')
+        
+        options = ['Add item to table',
+           'Delete item from table',
+           'Print items on given date',
+           'Check Maximum Cost',
+           'Check Total Cost',
+           'Analyze Cost over a range',
+            'Delete Entire Table',
+           'Quit Application',
+           'Restate Options']
+        for idx,option in enumerate(options,1):
+            print(f'{idx}: {option}')
+        print('\n\n')
 
     def is_valid_date(self,date,dateType = 'D'):
         try:
@@ -242,7 +246,7 @@ class MainHelper():
         self.save()  
 
     def length(self):
-        return self.table.table.size
+        return len(self.table.table)
 
     def deleteRecord(self):
         #find item then deletes it
@@ -251,6 +255,20 @@ class MainHelper():
         date = input('Input the date item was purchased (YYYY-MM-DD): ')
         self.table.deleteItem(item,date)
         self.save()
+
+    def findItemOnDate(self):
+        dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
+        while dateType.upper() not in ['D','M','Y']:
+            print('Invalid date type received')
+            dateType = input('Would you like to check max cost for day/month/year (D/M/Y)')
+
+        date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
+        while not self.is_valid_date(date,dateType.upper()):
+            print('Enter valid date')
+            date = input(f'Enter date to check max cost ({self.dateFormat[dateType.upper()]}): ')
+
+        self.table.checkItems(date,dateType.upper())
+
 
     def drop(self):
         if self.table.readPath != None and self.table.readPath.endswith('.csv'):
@@ -325,8 +343,9 @@ def main(helper,path):
     
     while True:
         if helper.length() == 0:
-            print('Proceeding to generate table..........')
-            helper.addItem()
+            print('Nothing left in dataframe. Proceeding to drop table..........')
+            helper.drop()
+            break
 
         option = input('Choose option: ')
         if option == '1':
@@ -336,20 +355,24 @@ def main(helper,path):
         elif option == '2':
             print('Deleting item......')
             helper.deleteRecord()
-            
+
         elif option == '3':
+            print('Finding item.....')
+            helper.findItemOnDate()
+
+        elif option == '4':
             print('Finding max cost......')
             helper.maxCost()
 
-        elif option == '4':
+        elif option == '5':
             print('Finding total cost......')
             helper.totalCost()            
 
-        elif option == '5':
+        elif option == '6':
             print('Analyzing cost......')
             helper.analyzeItem()
          
-        elif option == '6':
+        elif option == '7':
             print('Are you sure?')
             cfm = input('Type in \"DELETE\" to confirm deletion of table: ')
             if cfm == 'DELETE':
@@ -357,13 +380,13 @@ def main(helper,path):
                 helper.drop()
                 break
 
-        elif option == '7':
+        elif option == '8':
             print('Have a nice day')
             break
-        elif option == '8':
+        elif option == '9':
             helper.optionPrinter()
 
-        elif option == '9':
+        elif option == '10':
             print(helper.table.table)
         else:
             print('Invalid option')

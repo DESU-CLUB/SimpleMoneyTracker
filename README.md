@@ -3,10 +3,10 @@ A Python and Pandas program to find how much spent monthly
 
 
 ## Currently supports
-### Getting Average Cost across month/year
-### Getting max cost of item in a day, month or year
-### Analyzing your spendings across a month or year, using matplotlib and pandas
-### Return list of all items bought in a day,month or year
+- Getting Average Cost across month/year
+- Getting max cost of item in a day, month or year
+- Analyzing your spendings across a month or year, using matplotlib and pandas
+- Return list of all items bought in a day,month or year
 ___
 
 ## How to use:

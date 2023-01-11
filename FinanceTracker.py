@@ -34,7 +34,7 @@ class FinanceTable():
         if self.readPath == None:
             self.table = pd.DataFrame(changes,columns = ['item','cost','date','remarks'])
         else:
-            self.table.concat(pd.DataFrame(changes),0)     
+           self.table = pd.concat([self.table,pd.DataFrame(changes,columns = ['item','cost','date','remarks'])],axis =0,ignore_index = True)     
 
     def deleteItem(self,item,date):
         if type(self.table) == pd.DataFrame and self.table.size >0:
@@ -197,6 +197,7 @@ class MainHelper():
                     print('Valid answer required')
                     ow = input('Would you like to save changes into same file[Y/N]: ')
                 if ow in ['y','Y']:
+                    print('Saving table')
                     self.table.writeTable(self.table.readPath)
                 
             if self.table.readPath == None or ow in ['n','N']:
@@ -351,26 +352,32 @@ def main(helper,path):
         if option == '1':
             print('Adding item......')
             helper.addItem()
+            print('\nDone\n')
             
         elif option == '2':
             print('Deleting item......')
             helper.deleteRecord()
+            print('\nDone\n')
 
         elif option == '3':
             print('Finding item.....')
             helper.findItemOnDate()
+            print('\nDone\n')
 
         elif option == '4':
             print('Finding max cost......')
             helper.maxCost()
+            print('\nDone\n')
 
         elif option == '5':
             print('Finding total cost......')
-            helper.totalCost()            
+            helper.totalCost()      
+            print('\nDone\n')      
 
         elif option == '6':
             print('Analyzing cost......')
             helper.analyzeItem()
+            print('\nDone\n')
          
         elif option == '7':
             print('Are you sure?')
@@ -378,15 +385,16 @@ def main(helper,path):
             if cfm == 'DELETE':
                 print('Dropping table.......')
                 helper.drop()
+                print('\nDone\n')
                 break
 
         elif option == '8':
             print('Have a nice day')
             break
-        elif option == '9':
+        elif option == '9': 
             helper.optionPrinter()
 
-        elif option == '10':
+        elif option == '10':#Debugger
             print(helper.table.table)
         else:
             print('Invalid option')

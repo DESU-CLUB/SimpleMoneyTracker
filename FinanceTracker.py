@@ -184,23 +184,23 @@ class MainHelper():
 
 
     def save(self):
-        save = input('Would you like to save changes[Y/N]: ')
-        while save not in ['Y','N','y','n']:
+        save = input('Would you like to save changes[Y/N]: ').upper()
+        while save not in ['Y','N']:
             print('Valid answer required')
-            save = input('Would you like to save changes[Y/N]: ')
+            save = input('Would you like to save changes[Y/N]: ').upper()
         
         ow = 'N'
-        if save in ['y','Y']:
+        if save.upper() in ['Y']:
             if self.table.readPath != None:
-                ow = input('Would you like to save changes into same file[Y/N]: ')
-                while ow not in ['Y','N','y','n']:
+                ow = input('Would you like to save changes into same file[Y/N]: ').upper()
+                while ow not in ['Y','N']:
                     print('Valid answer required')
-                    ow = input('Would you like to save changes into same file[Y/N]: ')
-                if ow in ['y','Y']:
+                    ow = input('Would you like to save changes into same file[Y/N]: ').upper()
+                if ow in ['Y']:
                     print('Saving table')
                     self.table.writeTable(self.table.readPath)
                 
-            if self.table.readPath == None or ow in ['n','N']:
+            if self.table.readPath == None or ow in ['N']:
                 path = input('Input path to write to (include name of file): ')
                 while not path.endswith('.csv'):
                     print('Invalid path')
